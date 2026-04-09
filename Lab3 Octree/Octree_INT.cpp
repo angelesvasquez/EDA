@@ -50,7 +50,7 @@ public:
     Octree(Point bt, double h);
     bool exist(const Point&);
     void insert(const Point&);
-    bool find_closest(const Point& A, int radius, Point& xp, double& hN);
+    bool find_closest(const Point& A, double& radius, Point& xp, double& hN);
     void print(Octree* node, int level = 0, int idxch = -1);
     void printRoot();
 };
@@ -123,7 +123,7 @@ void Octree::insert(const Point& p) {
             points.push_back(p);
             std::vector<Point> cpoints = points;
             points.clear();
-            
+
             // redistribuir los puntos en los hijos
             for (auto& po : cpoints) {
                 int idx = getChildIndex(po);
@@ -148,7 +148,7 @@ void Octree::insert(const Point& p) {
 
 */
 // hN: lado del cubo donde esta el punto más cercano
-bool Octree::find_closest(const Point& A, int radius, Point& xp, double& hN) {
+bool Octree::find_closest(const Point& A, double& radius, Point& xp, double& hN) {
     // nodo hoja
     if (!children[0]) {
         bool found = 0;
@@ -161,7 +161,7 @@ bool Octree::find_closest(const Point& A, int radius, Point& xp, double& hN) {
                 xp = x; found = 1;
             }
         }
-        if(found) hN = h;
+        if (found) hN = h;
         return found;
     }
     // tiene hijos
@@ -181,14 +181,15 @@ bool Octree::find_closest(const Point& A, int radius, Point& xp, double& hN) {
         if (A.z < bt.z) dist += (bt.z - A.z) * (bt.z - A.z);
         else if (A.z > bt.z + h) dist += ((bt.z + h) - A.z) * ((bt.z + h) - A.z);
 
-        if (dist > radius * radius) return 0;
+        if (dist > bestDistance * bestDistance) return 0;
         bool found = 0;
         for (int i = 0; i < 8; i++) {
             Point xpl; double hC;
-            if (children[i]->find_closest(A, radius, xpl, hC)) {
+            if (children[i]->find_closest(A, bestDistance, xpl, hC)) {
                 double d = distanciaEuclidiana(A, xpl);
                 if (!found || d < distanciaEuclidiana(A, xp)) {
                     xp = xpl; found = 1; hN = hC;
+                    bestDistance = d;
                 }
             }
         }
@@ -200,7 +201,7 @@ void Octree::print(Octree* node, int level, int idxch) {
     std::string indent(level * 4, ' ');
     if (!node->children[0]) {
         //if (node->points.empty()) return;
-        std::cout << indent <<"Hijo [" << idxch << "] - (bt = (" << node->bottomLeft.x <<  "," << node->bottomLeft.y << "," << node->bottomLeft.z << "), puntos: " << node->points.size() << ")" << std::endl;
+        std::cout << indent << "Hijo [" << idxch << "] - (bt = (" << node->bottomLeft.x << "," << node->bottomLeft.y << "," << node->bottomLeft.z << "), puntos: " << node->points.size() << ")" << std::endl;
         for (auto& p : node->points) {
             std::cout << indent << "   (" << p.x << "," << p.y << "," << p.z << ")" << std::endl;
         }
@@ -224,60 +225,69 @@ void Octree::printRoot() {
 
 int main()
 {
-   /* Point bt(0, 0, 0);
-    Octree ot(bt, 4);
-    ot.insert(Point(1, 1, 1));
-    ot.insert(Point(1, 2, 1));
-    ot.insert(Point(0, 0, 0));
-    ot.insert(Point(2, 1, 1));
-    ot.insert(Point(3, 3, 3));
-    ot.insert(Point(2, 3, 3));
-    ot.insert(Point(2, 3, 1));
-    ot.print(&ot);
-    if (ot.exist(Point(1, 1, 1))) std::cout << "SI";
-    else std::cout << "NO";
-    Point resultado;
-    double hN;
-    if (ot.find_closest(Point(2, 2, 2), 25, resultado, hN)) {
-        std::cout << "X = (" << resultado.x << "," << resultado.y << "," << resultado.z << ")";
-        std::cout << "altura del cubo: " << hN;
-    }
-    else std::cout << "NULL";*/
+    /* Point bt(0, 0, 0);
+     Octree ot(bt, 4);
+     ot.insert(Point(1, 1, 1));
+     ot.insert(Point(1, 2, 1));
+     ot.insert(Point(0, 0, 0));
+     ot.insert(Point(2, 1, 1));
+     ot.insert(Point(3, 3, 3));
+     ot.insert(Point(2, 3, 3));
+     ot.insert(Point(2, 3, 1));
+     ot.print(&ot);
+     if (ot.exist(Point(1, 1, 1))) std::cout << "SI";
+     else std::cout << "NO";
+     Point resultado;
+     double hN;
+     if (ot.find_closest(Point(2, 2, 2), 25, resultado, hN)) {
+         std::cout << "X = (" << resultado.x << "," << resultado.y << "," << resultado.z << ")";
+         std::cout << "altura del cubo: " << hN;
+     }
+     else std::cout << "NULL";*/
     Point bt(0, 0, 0);
-    Octree ot(bt, 8);
-    ot.insert(Point(1, 1, 1)); ot.insert(Point(6, 1, 1));
-    ot.insert(Point(1, 6, 1)); ot.insert(Point(6, 6, 1));
-    ot.insert(Point(1, 1, 6)); ot.insert(Point(6, 1, 6));
-    ot.insert(Point(1, 6, 6)); ot.insert(Point(6, 6, 6));
+    Octree ot(bt, 8); // Altura 8 es ideal para divisiones exactas (8 -> 4 -> 2 -> 1)
 
-    ot.insert(Point(0, 0, 0)); ot.insert(Point(0, 0, 1));
-    ot.insert(Point(0, 1, 0)); ot.insert(Point(1, 0, 0));
-    ot.insert(Point(1, 1, 1)); ot.insert(Point(1, 1, 0));
-    ot.insert(Point(1, 0, 1)); ot.insert(Point(0, 1, 1));
-    ot.insert(Point(2, 2, 2)); ot.insert(Point(2, 2, 3));
-    ot.insert(Point(2, 3, 2)); ot.insert(Point(3, 2, 2));
-    ot.insert(Point(3, 3, 3)); ot.insert(Point(3, 3, 2));
-    ot.insert(Point(3, 2, 3)); ot.insert(Point(2, 3, 3));
+    // 1. Esquinas y puntos dispersos (8 puntos)
+    ot.insert(Point(0, 0, 0)); ot.insert(Point(7, 0, 0));
+    ot.insert(Point(0, 7, 0)); ot.insert(Point(7, 7, 0));
+    ot.insert(Point(0, 0, 7)); ot.insert(Point(7, 0, 7));
+    ot.insert(Point(0, 7, 7)); ot.insert(Point(7, 7, 7));
 
-    ot.insert(Point(4, 4, 4)); ot.insert(Point(4, 0, 0));
+    // 2. Cluster denso en el Hijo [0] (X:0-3, Y:0-3, Z:0-3) (12 puntos)
+    // Esto obligará a crear niveles h:4, h:2 y h:1
+    ot.insert(Point(1, 1, 1)); ot.insert(Point(1, 1, 2));
+    ot.insert(Point(1, 2, 1)); ot.insert(Point(2, 1, 1));
+    ot.insert(Point(0, 0, 1)); ot.insert(Point(0, 1, 0));
+    ot.insert(Point(1, 0, 0)); ot.insert(Point(2, 2, 2));
+    ot.insert(Point(2, 2, 1)); ot.insert(Point(2, 1, 2));
+    ot.insert(Point(1, 2, 2)); ot.insert(Point(0, 0, 2));
+
+    // 3. Cluster alrededor del centro (puntos cerca del 4) (10 puntos)
+    ot.insert(Point(3, 3, 3)); ot.insert(Point(4, 4, 4));
+    ot.insert(Point(3, 4, 3)); ot.insert(Point(4, 3, 4));
+    ot.insert(Point(4, 4, 3)); ot.insert(Point(3, 3, 4));
+    ot.insert(Point(4, 5, 4)); ot.insert(Point(5, 4, 5));
+    ot.insert(Point(3, 5, 3)); ot.insert(Point(5, 3, 5));
+
+    // 4. Puntos en los bordes y relleno (10 puntos)
+    ot.insert(Point(6, 1, 1)); ot.insert(Point(1, 6, 1));
+    ot.insert(Point(1, 1, 6)); ot.insert(Point(6, 6, 2));
+    ot.insert(Point(2, 6, 6)); ot.insert(Point(6, 2, 6));
+    ot.insert(Point(5, 5, 5)); ot.insert(Point(4, 0, 0));
     ot.insert(Point(0, 4, 0)); ot.insert(Point(0, 0, 4));
-    ot.insert(Point(4, 4, 0)); ot.insert(Point(4, 0, 4));
-    ot.insert(Point(0, 4, 4)); ot.insert(Point(2, 4, 2));
 
-    ot.insert(Point(7, 0, 0)); ot.insert(Point(0, 7, 0));
-    ot.insert(Point(0, 0, 7)); ot.insert(Point(7, 7, 0));
-    ot.insert(Point(7, 0, 7)); ot.insert(Point(0, 7, 7));
-    ot.insert(Point(5, 5, 0)); ot.insert(Point(0, 5, 5));
-
+    // Ejecutar impresión
     ot.print(&ot);
     ot.printRoot();
     if (ot.exist(Point(1, 1, 1))) std::cout << "SI";
     else std::cout << "NO";
     Point resultado;
     double hN;
-    if (ot.find_closest(Point(1, 1, 2), 5, resultado, hN)) {
+    double radioBusqueda = 1;
+    if (ot.find_closest(Point(100, 100, 2), radioBusqueda, resultado, hN)) {
         std::cout << "X = (" << resultado.x << "," << resultado.y << "," << resultado.z << ")";
         std::cout << "altura del cubo: " << hN;
+        std::cout << "radio: " << radioBusqueda;
     }
     else std::cout << "NULL";
 }
