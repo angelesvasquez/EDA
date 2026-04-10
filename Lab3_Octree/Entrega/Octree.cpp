@@ -1,5 +1,76 @@
 #include "Octree.h"
 
+bool leerCSV(Octree& tree, const std::string& dir) {
+    std::ifstream archivo(dir);
+    std::string linea;
+
+    if (!archivo.is_open()) {
+        std::cout << "Error al abrir el archivo" << std::endl;
+        return false;
+    }
+
+    while (std::getline(archivo, linea)) {
+        std::stringstream ss(linea);
+        std::string x_str, y_str, z_str;
+
+        if (std::getline(ss, x_str, ',') &&
+            std::getline(ss, y_str, ',') &&
+            std::getline(ss, z_str, ',')) {
+
+            int x = std::stod(x_str);
+            int y = std::stod(y_str);
+            int z = std::stod(z_str);
+
+            tree.insert(Point(x, y, z));
+        }
+    }
+
+    archivo.close();
+    return true;
+}
+
+bool calcularBoundsCSV(const std::string& dir, Point& bt, double& h) {
+    std::ifstream archivo(dir);
+    std::string linea;
+
+    if (!archivo.is_open()) {
+        std::cout << "Error al abrir el archivo" << std::endl;
+        return false;
+    }
+
+    int minX = INT_MAX, minY = INT_MAX, minZ = INT_MAX;
+    int maxX = INT_MIN, maxY = INT_MIN, maxZ = INT_MIN;
+
+    while (std::getline(archivo, linea)) {
+        std::stringstream ss(linea);
+        std::string x_str, y_str, z_str;
+
+        if (std::getline(ss, x_str, ',') &&
+            std::getline(ss, y_str, ',') &&
+            std::getline(ss, z_str, ',')) {
+
+            int x = std::stod(x_str);
+            int y = std::stod(y_str);
+            int z = std::stod(z_str);
+
+            minX = std::min(minX, x); maxX = std::max(maxX, x);
+            minY = std::min(minY, y); maxY = std::max(maxY, y);
+            minZ = std::min(minZ, z); maxZ = std::max(maxZ, z);
+        }
+    }
+
+    archivo.close();
+
+    bt = Point(minX, minY, minZ);
+    std::cout << "minx: " << minX << ", miny: " << minY << ", minz: " << minZ << std::endl;
+    double rangoX = maxX - minX + 1;
+    double rangoY = maxY - minY + 1;
+    double rangoZ = maxZ - minZ + 1;
+    h = std::max({ rangoX, rangoY, rangoZ });
+
+    return true;
+}
+
 double distanciaEuclidiana(Point p, Point q) {
     double suma = pow(p.x - q.x, 2) + pow(p.y - q.y, 2) + pow(p.z - q.z, 2);
     return sqrt(suma);
