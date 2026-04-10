@@ -32,7 +32,7 @@ public:
 
     bool exist(const Point& p_obj);
     void insert(const Point& p);
-    bool find_closest(const Point& A, double& radius, Point& xp, double& hN);
+    bool find_closest(const Point& A, double radius, Point& xp, double& hN);
     void print(Octree* node, int level = 0, int idxch = -1);
     void printRoot();
 };

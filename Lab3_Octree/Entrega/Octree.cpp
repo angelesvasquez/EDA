@@ -78,7 +78,7 @@ void Octree::insert(const Point& p) {
     }
 }
 
-bool Octree::find_closest(const Point& A, double& radius, Point& xp, double& hN) {
+bool Octree::find_closest(const Point& A, double radius, Point& xp, double& hN) {
     // nodo hoja
     if (!children[0]) {
         bool found = 0;
@@ -97,7 +97,6 @@ bool Octree::find_closest(const Point& A, double& radius, Point& xp, double& hN)
     // tiene hijos
     else {
         double bestDistance = radius;
-        Point bestPoint(0, 0, 0);
         double dist = 0; // distancia minima del punto A al cubo actual
         Point bt = bottomLeft;
         // caso 1: A esta a la izq del cubo

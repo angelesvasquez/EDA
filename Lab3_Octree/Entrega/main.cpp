@@ -36,8 +36,7 @@ int main() {
         std::cout << "No se encontraron puntos en el radio de busqueda." << std::endl;
     }
 
-    radio = 5;
-    if (!ot.find_closest(Point(7, 0, 7), radio, res, hN)) {
+    if (!ot.find_closest(Point(7, 0, 7), 1, res, hN)) {
         std::cout << "No hay puntos cerca de (7,0,7) en un radio de 1." << std::endl;
     }
 
