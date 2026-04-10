@@ -5,6 +5,9 @@
 #include <vector>
 #include <cmath>
 #include <string>
+#include <fstream>
+#include <sstream>
+#include <limits>
 
 const int CAPACITY = 4;
 
@@ -36,5 +39,8 @@ public:
     void print(Octree* node, int level = 0, int idxch = -1);
     void printRoot();
 };
+
+bool leerCSV(Octree& tree, const std::string& dir);
+bool calcularBoundsCSV(const std::string& dir, Point& bt, double& h);
 
 #endif
