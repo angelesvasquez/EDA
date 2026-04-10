@@ -7,7 +7,7 @@ int main() {
     Point bt;
     double h;
 
-    std::string archivo = "C://Users//alumno-b305//Downloads//Octree//points2.csv";
+    std::string archivo = "D://Lenovo//Descargas//points2.csv";
 
     if (!calcularBoundsCSV(archivo, bt, h)) return 1;
 
