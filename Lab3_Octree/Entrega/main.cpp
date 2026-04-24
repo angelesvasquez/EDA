@@ -2,8 +2,6 @@
 
 int main() {
 
-    //leerCSV(ot, "C://Users//alumno-b305//Downloads//Octree//points2.csv");
-
     Point bt;
     double h;
 
@@ -12,13 +10,10 @@ int main() {
     if (!calcularBoundsCSV(archivo, bt, h)) return 1;
 
     Octree ot(bt, h);
-    leerCSV(ot, archivo);
 
     //ot.print(&ot);
 
-    std::cout << "bt = (" << bt.x << ", " << bt.y << ", " << bt.z << ")" << std::endl;
-    std::cout << "h  = " << h << std::endl;
-    ot.printRoot();
+    //ot.printRoot();
     /*ot.insert(Point(1, 1, 1));
     ot.insert(Point(7, 7, 7));
     ot.insert(Point(1, 7, 1));
@@ -55,17 +50,37 @@ int main() {
         std::cout << "No hay puntos cerca de (7,0,7) en un radio de 1." << std::endl;
     }
     */
-
+    std::cout << "bt = (" << bt.x << ", " << bt.y << ", " << bt.z << ")" << std::endl;
+    std::cout << "h  = " << h << std::endl;
     //1.1) Sea X el punto más cercano a (18,28,175) con un radio de 10 y con un N=1, cual es el valor de X (si no existe escriba NULL). 
-    std::cout << "Buscando cerca de (18,28,175) con radio " << 10 << "..." << std::endl;
-    Point res; double hN;
-    if (ot.find_closest(Point(18,28,175), 10, res, hN)) {
+    Point X (21,5,143);
+    double radio = 50;
+    /*
+    std::cout << "A = (" << X.x << ","
+        << X.y << "," << X.z << "), radio = " << radio << ", N = "<< CAPACITY << std::endl;
+        Point res; double hN; Point btN;
+    if (ot.find_closest(X, radio, res, hN, btN)) {
         std::cout << "Punto mas cercano encontrado: (" << res.x << ","
             << res.y << "," << res.z << ")" << std::endl;
+        std::cout << "Bottom left: (" << btN.x << ","
+            << btN.y << "," << btN.z << ")" << std::endl;
         std::cout << "Encontrado en un nodo de altura h = " << hN << std::endl;
     }
     else {
         std::cout << "No se encontraron puntos en el radio de busqueda." << std::endl;
+    }
+    */
+    Point res; double hN; Point btN;
+    std::cout << "=== Busqueda ===\n";
+    std::cout << "Target A = (" << X.x << ","
+              << X.y << "," << X.z << ")  |  radio = " << radio << ", N = "<<CAPACITY<<std::endl;
+    if (ot.find_closest(X, radio, res, hN, btN)) {
+        std::cout << "X = (" << res.x << ", " << res.y << ", " << res.z << ")\n";
+        std::cout << "Bottom Left = (" << btN.x << ", " << btN.y << ", " << btN.z << ")\n";
+        std::cout << "h del nodo = " << hN << "\n";
+    }
+    else {
+        std::cout << "X = NULL\n";
     }
     return 0;
 }

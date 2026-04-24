@@ -62,7 +62,7 @@ bool calcularBoundsCSV(const std::string& dir, Point& bt, double& h) {
     archivo.close();
 
     bt = Point(minX, minY, minZ);
-    std::cout << "minx: " << minX << ", miny: " << minY << ", minz: " << minZ << std::endl;
+    //std::cout << "minx: " << minX << ", miny: " << minY << ", minz: " << minZ << std::endl;
     double rangoX = maxX - minX + 1;
     double rangoY = maxY - minY + 1;
     double rangoZ = maxZ - minZ + 1;
@@ -149,7 +149,7 @@ void Octree::insert(const Point& p) {
     }
 }
 
-bool Octree::find_closest(const Point& A, double radius, Point& xp, double& hN) {
+bool Octree::find_closest(const Point& A, double radius, Point& xp, double& hN, Point& btN) {
     // nodo hoja
     if (!children[0]) {
         bool found = 0;
@@ -162,7 +162,7 @@ bool Octree::find_closest(const Point& A, double radius, Point& xp, double& hN) 
                 xp = x; found = 1;
             }
         }
-        if (found) hN = h;
+        if (found) { hN = h; btN = bottomLeft;} 
         return found;
     }
     // tiene hijos
@@ -184,12 +184,13 @@ bool Octree::find_closest(const Point& A, double radius, Point& xp, double& hN) 
         if (dist > bestDistance * bestDistance) return 0;
         bool found = 0;
         for (int i = 0; i < 8; i++) {
-            Point xpl; double hC;
-            if (children[i]->find_closest(A, bestDistance, xpl, hC)) {
+            Point xpl; double hC; Point btC;
+            if (children[i]->find_closest(A, bestDistance, xpl, hC, btC)) {
                 double d = distanciaEuclidiana(A, xpl);
                 if (!found || d < distanciaEuclidiana(A, xp)) {
                     xp = xpl; found = 1; hN = hC;
                     bestDistance = d;
+                    btN = btC;
                 }
             }
         }

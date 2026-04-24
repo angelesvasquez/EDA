@@ -8,8 +8,9 @@
 #include <fstream>
 #include <sstream>
 #include <limits>
+#include <algorithm>
 
-const int CAPACITY = 4;
+const int CAPACITY = 50;
 
 struct Point {
     int x, y, z;
@@ -35,7 +36,7 @@ public:
 
     bool exist(const Point& p_obj);
     void insert(const Point& p);
-    bool find_closest(const Point& A, double radius, Point& xp, double& hN);
+    bool find_closest(const Point& A, double radius, Point& xp, double& hN, Point& btN);
     void print(Octree* node, int level = 0, int idxch = -1);
     void printRoot();
 };

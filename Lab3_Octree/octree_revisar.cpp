@@ -230,14 +230,15 @@ void Octree::getLeafNodes(Octree* node, std::vector<std::pair<Point, double>>& l
     }
 }
 
-void Octree::collectLeaves(Octree* node, std::vector<std::pair<Point, double>>& leaves) {
+void Octree::collectLeaves(Octree* node, std::vector<std::pair<Point, double>>& leaves, double h_root) {
     if (!node->children[0]) {
+        if (node->h > h_root * 0.2) return;
         if (!node->points.empty())
             leaves.push_back({ node->bottomLeft, node->h });
     }
     else {
         for (int i = 0; i < 8; i++)
-            collectLeaves(node->children[i], leaves);
+            collectLeaves(node->children[i], leaves, h_root);
     }
 }
 
