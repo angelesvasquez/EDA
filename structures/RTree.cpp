@@ -435,8 +435,6 @@ int main() {
     // Usamos M=4, m=2
     Rtree t(4);
 
-    cout << "--- TEST: RECTANGULOS Y BAJA DE NODOS INTERNOS ---" << endl;
-
     vector<MBR> rects = {
         MBR(0, 2, 0, 2),   // ID 0
         MBR(1, 3, 1, 3),   // ID 1
