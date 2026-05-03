@@ -97,12 +97,12 @@ class Rtree {
         }
         return seeds;
     }
-    int pickNext(pair<vector<Entry>, Rectangle>& g1, pair<vector<Entry>, Rectangle>& g2, vector<Entry>& entries) {
+    int pickNext(Rectangle r1, Rectangle r2, vector<Entry>& entries) {
         double diff = -std::numeric_limits<double>::infinity();
         int idxEntry = 0;
         for (int i = 0; i < entries.size(); i++) {
-            double d1 = g1.second.enlargement(entries[i].mbr);
-            double d2 = g2.second.enlargement(entries[i].mbr);
+            double d1 = r1.enlargement(entries[i].mbr);
+            double d2 = r2.enlargement(entries[i].mbr);
             if (diff < abs(d1 - d2)) {
                 idxEntry = i;
                 diff = abs(d1 - d2);
@@ -155,7 +155,7 @@ class Rtree {
                 break;
             }
 
-            int idxNextEntry = pickNext(g1, g2, entries);
+            int idxNextEntry = pickNext(g1.second, g2.second, entries);
 
             double d1 = g1.second.enlargement(entries[idxNextEntry].mbr);
             double d2 = g2.second.enlargement(entries[idxNextEntry].mbr);
