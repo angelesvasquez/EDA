@@ -16,30 +16,30 @@ int id = 0;
 
 struct Node;
 
-struct Rectangle {
+struct MBR {
     double xMin, yMin;
     double xMax, yMax;
 
 public:
-    Rectangle() : xMin(-1.0), yMin(-1.0), xMax(-1.0), yMax(-1.0) {};
-    Rectangle(double xMin_, double xMax_, double yMin_, double yMax_) :
+    MBR() : xMin(-1.0), yMin(-1.0), xMax(-1.0), yMax(-1.0) {};
+    MBR(double xMin_, double xMax_, double yMin_, double yMax_) :
         xMin(xMin_), yMin(yMin_), xMax(xMax_), yMax(yMax_) {
     };
 
     double getArea() {
         return (xMax - xMin) * (yMax - yMin);
     }
-    Rectangle combine(Rectangle& B) {
-        Rectangle J = *this;
+    MBR combine(MBR& B) {
+        MBR J = *this;
         if (B.xMin < J.xMin) J.xMin = B.xMin;
         if (B.xMax > J.xMax) J.xMax = B.xMax;
         if (B.yMin < J.yMin) J.yMin = B.yMin;
         if (B.yMax > J.yMax) J.yMax = B.yMax;
         return J;
     }
-    double enlargement(Rectangle B) {
+    double enlargement(MBR B) {
         double oldArea = getArea();
-        Rectangle A = combine(B);
+        MBR A = combine(B);
         double newArea = A.getArea() - oldArea;
         return newArea;
     }
@@ -51,10 +51,10 @@ public:
 
 
 struct Entry {
-    Rectangle mbr;
+    MBR mbr;
     Node* childPointer;
     int tupleId;
-    Entry(Rectangle mbr_ = Rectangle(), Node* chP = nullptr, int tpId = 0) {
+    Entry(MBR mbr_ = MBR(), Node* chP = nullptr, int tpId = 0) {
         mbr = mbr_;
         childPointer = chP;
         tupleId = tpId;
@@ -63,11 +63,11 @@ struct Entry {
 
 // Nodo hoja o interno
 struct Node {
-    Rectangle mbrNode;
+    MBR mbrNode;
     vector<Entry> entries;
     bool isLeaf;
     Node* parent;
-    Node(vector<Entry> ent, Rectangle mbr_ = Rectangle(), bool isLeaf_ = true, Node* parnt = nullptr) {
+    Node(vector<Entry> ent, MBR mbr_ = MBR(), bool isLeaf_ = true, Node* parnt = nullptr) {
         entries = ent;
         isLeaf = isLeaf_;
         mbrNode = mbr_;
@@ -78,26 +78,26 @@ struct Node {
 class Rtree {
     int M, m;
     Node* root;
-    
+
     pair<int, int> pickSeeds(vector<Entry>& entries) {
         double d = -std::numeric_limits<double>::infinity();
         pair<int, int> seeds;
         for (int i = 0; i < entries.size() - 1; i++) {
-            Rectangle I;
-            for (int j = i+1; j <= entries.size() - 1; j++) {
+            MBR I;
+            for (int j = i + 1; j <= entries.size() - 1; j++) {
                 I = entries[i].mbr;
-                Rectangle J = entries[j].mbr;
+                MBR J = entries[j].mbr;
                 I = I.combine(J);
                 double dActual = I.getArea() - entries[i].mbr.getArea() - J.getArea();
                 if (dActual > d) {
                     d = dActual;
-                    seeds = {i, j};
+                    seeds = { i, j };
                 }
             }
         }
         return seeds;
     }
-    int pickNext(Rectangle r1, Rectangle r2, vector<Entry>& entries) {
+    int pickNext(MBR r1, MBR r2, vector<Entry>& entries) {
         double diff = -std::numeric_limits<double>::infinity();
         int idxEntry = 0;
         for (int i = 0; i < entries.size(); i++) {
@@ -118,8 +118,8 @@ class Rtree {
     Node* splitNode(Node* L) {
         vector<Entry> entries = L->entries;
         pair<int, int> seeds = pickSeeds(entries);
-        pair<vector<Entry>, Rectangle> g1 = { {entries[seeds.first]}, entries[seeds.first].mbr };
-        pair<vector<Entry>, Rectangle> g2 = { {entries[seeds.second]}, entries[seeds.second].mbr };
+        pair<vector<Entry>, MBR> g1 = { {entries[seeds.first]}, entries[seeds.first].mbr };
+        pair<vector<Entry>, MBR> g2 = { {entries[seeds.second]}, entries[seeds.second].mbr };
         /*for (auto it = entries.begin(); it != entries.end(); ) {
             if ((*it).tupleId == seeds.first.tupleId || (*it).tupleId == seeds.second.tupleId) {
                 it = entries.erase(it);
@@ -128,12 +128,12 @@ class Rtree {
         }*/
         //vector<bool> visited;
         if (seeds.first > seeds.second) swap(seeds.first, seeds.second);
+        entries.erase(entries.begin() + seeds.second);
         entries.erase(entries.begin() + seeds.first);
-        entries.erase(entries.begin() + seeds.second-1);
         /*for (int i = 0; i < entries.size(); i++) {
             if (i != seeds.first && i != seeds.second) entries.push_back(entries[i]);
         }*/
-        
+
         while (!entries.empty()) {
             /*
             Si un grupo tiene tan pocas entradas que todas las demás deben asignarse a él
@@ -159,10 +159,10 @@ class Rtree {
 
             double d1 = g1.second.enlargement(entries[idxNextEntry].mbr);
             double d2 = g2.second.enlargement(entries[idxNextEntry].mbr);
-        
-            if (d1 < d2 || 
-               (d1 == d2 && (g1.second.getArea() < g2.second.getArea()) || 
-               (d1 == d2 && g1.second.getArea() == g2.second.getArea() && g1.first.size() <= g2.first.size()))) {
+
+            if (d1 < d2 ||
+                (d1 == d2 && (g1.second.getArea() < g2.second.getArea()) ||
+                (d1 == d2 && g1.second.getArea() == g2.second.getArea() && g1.first.size() <= g2.first.size()))) {
                 g1.first.push_back(entries[idxNextEntry]);
                 g1.second = g1.second.combine(entries[idxNextEntry].mbr);
             }
@@ -174,7 +174,7 @@ class Rtree {
         }
         L->entries = g1.first;
         L->mbrNode = g1.second;
-        Node* n2 = new Node(g2.first, g2.second,L->isLeaf);
+        Node* n2 = new Node(g2.first, g2.second, L->isLeaf);
         return n2;
     }
     Node* chooseLeaf(Entry e) {
@@ -188,8 +188,8 @@ class Rtree {
             for (auto entry : n->entries) {
                 double expand = entry.mbr.enlargement(e.mbr);
                 double area = entry.mbr.getArea();
-                if (expand < bestExpand || 
-                   (expand == bestExpand && area < bestArea)) {
+                if (expand < bestExpand ||
+                    (expand == bestExpand && area < bestArea)) {
                     bestExpand = expand;
                     bestArea = area;
                     //f = entry;
@@ -205,18 +205,18 @@ class Rtree {
         if (ll) { nn = ll; }
 
         while (true) {
-            if (n == root){
+            if (n == root) {
                 if (nn != nullptr) {
                     Entry e1(n->mbrNode, n), e2(nn->mbrNode, nn);
                     vector<Entry> entries;
                     entries.push_back(e1);
                     entries.push_back(e2);
-                    Rectangle newMbr = n->mbrNode.combine(nn->mbrNode);
+                    MBR newMbr = n->mbrNode.combine(nn->mbrNode);
                     Node* newRoot = new Node(entries, newMbr, false);
                     root = newRoot;
                     n->parent = root;
                     nn->parent = root;
-                    
+
                 }
                 break;
             }
@@ -228,8 +228,8 @@ class Rtree {
             }
             Node* pp = nullptr;
             // ajustar el mbr de la entrada para q cubra n
-            if(ep) ep->mbr = n->mbrNode;
-            
+            if (ep) ep->mbr = n->mbrNode;
+
             p->mbrNode = p->entries[0].mbr;
             for (auto& e : p->entries) {
                 p->mbrNode = p->mbrNode.combine(e.mbr);
@@ -256,7 +256,7 @@ class Rtree {
                     //nn->parent = pp;
                     for (int i = 0; i < p->entries.size(); i++) p->entries[i].childPointer->parent = p;
                     for (int i = 0; i < pp->entries.size(); i++) pp->entries[i].childPointer->parent = pp;
-                    
+
                 }
             }
             n = p; nn = pp;
@@ -264,8 +264,8 @@ class Rtree {
     }
     void printTree(Node* node, int level = 0) {
         if (!node) return;
-            // indentación
-            for (int i = 0; i < level; i++) cout << "  ";
+        // indentación
+        for (int i = 0; i < level; i++) cout << "  ";
 
         cout << "[Level " << level << "] ";
         cout << (node->isLeaf ? "Leaf" : "Internal");
@@ -274,7 +274,7 @@ class Rtree {
         cout << " | Node MBR: ";
         cout << "(" << node->mbrNode.xMin << "," << node->mbrNode.xMax << ") - ";
         cout << "(" << node->mbrNode.yMin << "," << node->mbrNode.yMax << ")";
-        cout << " | addr: " << node << " | parent: " << node->parent << "\n"<<endl;
+        cout << " | addr: " << node << " | parent: " << node->parent << "\n" << endl;
 
         for (auto& e : node->entries) {
 
@@ -287,12 +287,94 @@ class Rtree {
                 cout << " | id: " << e.tupleId << endl;
             }
             else {
-                cout << " | child: " << e.childPointer<<endl;
+                cout << " | child: " << e.childPointer << endl;
             }
 
             // recursión
             if (!node->isLeaf && e.childPointer != nullptr) {
                 printTree(e.childPointer, level + 1);
+            }
+        }
+    }
+
+    bool overlap(MBR& A, MBR& B) {
+        return !(A.xMax < B.xMin || A.xMin > B.xMax ||
+                 A.yMax < B.yMin || A.yMin > B.yMax);
+    }
+    Node* findLeaf(Node* T,Entry e) {
+        if (!T->isLeaf) {
+            // Buscar en subarboles
+            for (auto& et : T->entries) {
+                // ver el overlap
+                if (overlap(e.mbr, et.mbr)) {
+                    Node* n = findLeaf(et.childPointer, e);
+                    if (n != nullptr) return n;
+                }
+            }
+        }
+        else {
+            // Buscar el registro en el nodo hoja
+            for (int i = 0; i < T->entries.size(); i++) {
+                if (T->entries[i].tupleId == e.tupleId) {
+                    return T;
+                }
+            }
+            return nullptr;
+        }
+        return nullptr;
+    }
+    void extractLeaves(Node* n, vector<Entry>& leaves) {
+        if (n->isLeaf) {
+            for (auto& e : n->entries) {
+                leaves.push_back(e);
+            }
+        }
+        else {
+            for (auto& e : n->entries) {
+                extractLeaves(e.childPointer, leaves);
+            }
+        }
+        delete n;
+    }
+    void condenseTree(Node* L) {
+        // propagar los cambios por el nodo eliminado
+        Node* n = L;
+        vector<Node*> deleteNodes;
+        while (true) {
+            if (n == root) break;
+
+            else {
+                Node* p = n->parent;
+                Entry* ep = nullptr;
+                for (int i = 0; i < p->entries.size(); i++) {
+                    if (n == p->entries[i].childPointer) ep = &p->entries[i];
+                }
+                if (n->entries.size() < m) {
+                    deleteNodes.push_back(n);
+                    int idx = 0;
+                    for (int i = 0; i < p->entries.size(); i++) {
+                        if (n == p->entries[i].childPointer) p->entries.erase(p->entries.begin() + i);
+                    }
+
+                }
+                else {
+                    // reajustar mbr
+                    MBR newR = n->entries[0].mbr;
+                    for (int i = 1; i < n->entries.size(); i++) {
+                        newR = newR.combine(n->entries[i].mbr);
+                    }
+                    if(ep) ep->mbr = newR;
+                    n->mbrNode = newR;
+                }
+                n = p;
+            }
+        }
+        // reinsertar entradas de q
+        for (auto n : deleteNodes) {
+            vector<Entry> leaves;
+            extractLeaves(n, leaves);
+            for (auto& e : leaves) {
+                insert(e);
             }
         }
     }
@@ -307,7 +389,7 @@ public:
         if (root == nullptr) {
             vector<Entry> entries;
             entries.push_back(e);
-            root = new Node(entries,e.mbr);
+            root = new Node(entries, e.mbr);
             return;
         }
         Node* l = chooseLeaf(e);
@@ -323,28 +405,79 @@ public:
             adjustTree(l, LL);
         }
     }
+    void remove(Entry e) {
+        Node* L = findLeaf(root,e);
+        if (!L) return;
+        for (int i = 0; i < L->entries.size(); i++) {
+            if (L->entries[i].tupleId == e.tupleId) L->entries.erase(L->entries.begin() + i);
+        }
+        // L puntero al nodo donde se elimino la entrada e
+        condenseTree(L);
+        if (root->entries.size() == 1 && !root->isLeaf) {
+            Node* oldRoot = root;
+            root = root->entries[0].childPointer;
+            root->parent = nullptr;
+            delete oldRoot;
+        }
+        else if (root->entries.empty()) {
+            delete root;
+            root = nullptr;
+        }
+    }
     void print() {
-        printTree(root);
+        if (root) printTree(root);
+        else cout << "Arbol vacio"<<endl;
     }
 
 };
 
 int main() {
+    // Usamos M=4, m=2
     Rtree t(4);
 
-    vector<Rectangle> rects = {
-        Rectangle(0, 3, 0, 2),
-        Rectangle(1, 4, 1, 5),
-        Rectangle(2, 6, 3, 7),
-        Rectangle(8, 12, 8, 11),
-        Rectangle(9, 13, 9, 14),
-        Rectangle(4, 9, 0, 2)
+    cout << "--- TEST: RECTANGULOS Y BAJA DE NODOS INTERNOS ---" << endl;
+
+    vector<MBR> rects = {
+        MBR(0, 2, 0, 2),   // ID 0
+        MBR(1, 3, 1, 3),   // ID 1
+        MBR(10, 12, 10, 12), // ID 2
+        MBR(11, 13, 11, 13), // ID 3
+        MBR(20, 22, 20, 22), // ID 4
+        MBR(21, 23, 21, 23), // ID 5
+        MBR(30, 32, 30, 32), // ID 6
+        MBR(31, 33, 31, 33), // ID 7
+        MBR(40, 42, 40, 42), // ID 8
+        MBR(41, 43, 41, 43), // ID 9
+        MBR(5, 7, 5, 7),     // ID 10
+        MBR(6, 8, 6, 8)      // ID 11
     };
 
-    for (auto& r : rects) {
-        t.insert(Entry(r, nullptr, id++));
+    for (int i = 0; i < rects.size(); i++) {
+        t.insert(Entry(rects[i], nullptr, i));
     }
 
+    t.print();
+
+    cout << "\nEliminando ID 0..." << endl;
+    t.remove(Entry(rects[0], nullptr, 0));
+
+    cout << "Eliminando ID 1 ..." << endl;
+    t.remove(Entry(rects[1], nullptr, 1));
+    
+    cout << "\nArbol despues de eliminaciones y rebalanceo:" << endl;
+    t.print();
+
+    /*
+       Vaciamos el árbol
+    */
+    cout << "\nVaciando el resto del arbol..." << endl;
+    for (int i = 2; i < rects.size(); i++) {
+        cout << "\nEliminando ID " << i << endl;
+        t.remove(Entry(rects[i], nullptr, i));
+        t.print();
+    }
+
+    cout << "Arbol final (deberia estar vacio o solo raiz nula):" << endl;
     t.print();
 
     return 0;
