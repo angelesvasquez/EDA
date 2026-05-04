@@ -53,4 +53,6 @@ bool validSquare(vector<int>& p1, vector<int>& p2, vector<int>& p3, vector<int>&
 int main() {
     vector<int> p1 = {-1,0}, p2 = {0,-1}, p3 = {1,0}, p4 = {0,1};
     cout << validSquare(p1, p2, p3, p4) << endl;
+    p1 = {0,0}, p2 = {2,1}, p3 = {4,0}, p4 = {2,-1};
+    cout << validSquare(p1, p2, p3, p4) << endl;
 }
