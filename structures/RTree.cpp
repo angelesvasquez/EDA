@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <limits>
+#include <algorithm>
 
 using namespace std;
 
@@ -75,6 +76,20 @@ struct Node {
     }
 };
 
+enum Axis { X_AXIS, Y_AXIS };
+
+struct CompareAxis {
+    Axis axis;
+    bool operator()(const Entry& A, const Entry& B) const {
+        if (axis == X_AXIS) {
+            return A.mbr.xMin + A.mbr.xMax < B.mbr.xMin + B.mbr.xMax;
+        }
+        else {
+            return A.mbr.yMin + A.mbr.yMax < B.mbr.yMin + B.mbr.yMax;
+        }
+    }
+};
+
 class Rtree {
     int M, m;
     Node* root;
@@ -99,17 +114,17 @@ class Rtree {
     }
 
     pair<int, int> linearPickSeeds(vector<Entry> entries) {
-        pair<int, int> seeds;   
+        pair<int, int> seeds;
         double MaxX = std::numeric_limits<double>::lowest(),
-               MaxY = std::numeric_limits<double>::lowest(),
-               MinY = std::numeric_limits<double>::max(),
-               MinX = std::numeric_limits<double>::max();
-        
+            MaxY = std::numeric_limits<double>::lowest(),
+            MinY = std::numeric_limits<double>::max(),
+            MinX = std::numeric_limits<double>::max();
+
         double lowestHighX = std::numeric_limits<double>::max(); // x max mas bajo
         double highestLowX = std::numeric_limits<double>::lowest(); // x min mas alto
         double lowestHighY = std::numeric_limits<double>::max(); // y max mas bajo
         double highestLowY = std::numeric_limits<double>::lowest(); // y min mas alto
-        
+
         int idLHX = 0, idHLX = 0, idLHY = 0, idHLY = 0;
 
         for (int i = 0; i < entries.size(); i++) {
@@ -140,7 +155,7 @@ class Rtree {
 
         double gapX = (widthX == 0) ? 0 : (highestLowX - lowestHighX) / widthX;
         double gapY = (widthY == 0) ? 0 : (highestLowY - lowestHighY) / widthY;
-        
+
         if (gapX > gapY) return { idHLX, idLHX };
         else return { idHLY, idLHY };
     }
@@ -198,7 +213,6 @@ class Rtree {
         Node* n2 = new Node(g2.first, g2.second, L->isLeaf);
         return n2;
     }
-    
 
     MBR calcularMBREntries(vector<Entry> entries) {
         if (entries.empty()) return MBR();
@@ -221,7 +235,7 @@ class Rtree {
             MBR mbr1 = calcularMBREntries(g1);
             MBR mbr2 = calcularMBREntries(g2);
 
-            double area = mbr1.getArea() + mbr2.getArea();    
+            double area = mbr1.getArea() + mbr2.getArea();
             if (area < bestArea) {
                 bestG1 = g1; bestG2 = g2; bestArea = area;
             }
@@ -313,7 +327,71 @@ class Rtree {
         Node* n2 = new Node(g2.first, g2.second, L->isLeaf);
         return n2;
     }
-    
+
+    int chooseAxis(vector<Entry> entries) {
+        pair<int, int> seeds = pickSeeds(entries);
+        MBR mbr1 = entries[seeds.first].mbr;
+        MBR mbr2 = entries[seeds.second].mbr;
+        double c1x = (mbr1.xMax + mbr1.xMin) / 2;
+        double c2x = (mbr2.xMax + mbr2.xMin) / 2;
+        double distx = abs(c1x - c2x);        
+        
+        double c1y = (mbr1.yMax + mbr1.yMin) / 2;
+        double c2y = (mbr2.yMax + mbr2.yMin) / 2;
+        double disty = abs(c1y - c2y);
+        
+        // range x = x global max - x global min
+        double xMax = std::numeric_limits<double>::lowest();
+        double xMin = std::numeric_limits<double>::max();
+        double yMax = std::numeric_limits<double>::lowest();
+        double yMin = std::numeric_limits<double>::max();
+        for (auto& e : entries) {
+            xMax = max(e.mbr.xMax, xMax);
+            xMin = min(e.mbr.xMin, xMin);
+            yMax = max(e.mbr.yMax, yMax);
+            yMin = min(e.mbr.yMin, yMin);
+         }
+        double rangeX = xMax - xMin;
+        double rangeY = yMax - yMin;
+        distx = (rangeX == 0) ? 0 : distx / rangeX;
+        disty = (rangeY == 0) ? 0 : disty / rangeY;
+        
+        if (distx > disty) return 0;
+        else return 1;
+    }
+
+    Node* distributeGreene(Node* L, vector<Entry> entries, int axis) {
+        //ordenar las entradas
+        if (axis == X_AXIS) sort(entries.begin(), entries.end(), CompareAxis{ X_AXIS });
+        else sort(entries.begin(), entries.end(), CompareAxis{ Y_AXIS });
+        
+        vector<Entry> g1, g2;
+        int n = entries.size();
+        for (int i = 0; i < n / 2; i++) g1.push_back(entries[i]);
+        if (n % 2 == 1) {
+            Entry extra = entries[n/2];
+            for (int i = n / 2 + 1; i < n; i++) g2.push_back(entries[i]);
+            MBR mbr1 = calcularMBREntries(g1);
+            MBR mbr2 = calcularMBREntries(g2);
+            double exp1 = mbr1.enlargement(extra.mbr);
+            double exp2 = mbr2.enlargement(extra.mbr);
+            if (exp1 < exp2) g1.push_back(extra);
+            else g2.push_back(extra);
+        }
+        else {
+            for (int i = n/2; i < n; i++) g2.push_back(entries[i]);
+        }
+        L->entries = g1;
+        L->mbrNode = calcularMBREntries(g1);
+        Node* LL = new Node(g2, calcularMBREntries(g2), L->isLeaf);
+        return LL;
+    }
+
+    Node* greeneSplit(Node* L) {
+        int axis = chooseAxis(L->entries);
+        return distributeGreene(L, L->entries, axis);
+    }
+
     Node* chooseLeaf(Entry e) {
         Node* n = root;
         while (true) {
@@ -389,7 +467,7 @@ class Rtree {
                         p->mbrNode = p->mbrNode.combine(e.mbr);
                     }
 
-                    pp = quadraticSplit(p);
+                    pp = exhaustiveSplit(p);
                     //nn->parent = pp;
                     for (int i = 0; i < p->entries.size(); i++) p->entries[i].childPointer->parent = p;
                     for (int i = 0; i < pp->entries.size(); i++) pp->entries[i].childPointer->parent = pp;
@@ -410,8 +488,8 @@ class Rtree {
         // imprimir MBR del nodo
         cout << " | Node MBR: ";
         cout << "(" << node->mbrNode.xMin << "," << node->mbrNode.xMax << ") - ";
-        cout << "(" << node->mbrNode.yMin << "," << node->mbrNode.yMax << ")";
-        cout << " | addr: " << node << " | parent: " << node->parent << "\n" << endl;
+        cout << "(" << node->mbrNode.yMin << "," << node->mbrNode.yMax << ")"<<endl;
+        //cout << " | addr: " << node << " | parent: " << node->parent << "\n" << endl;
 
         for (auto& e : node->entries) {
 
@@ -423,9 +501,9 @@ class Rtree {
             if (node->isLeaf) {
                 cout << " | id: " << e.tupleId << endl;
             }
-            else {
+            /*else {
                 cout << " | child: " << e.childPointer << endl;
-            }
+            }*/
 
             // recursión
             if (!node->isLeaf && e.childPointer != nullptr) {
@@ -538,7 +616,7 @@ public:
         else {
             // OverFlow
             l->entries.push_back(e);
-            Node* LL = linearSplit(l);
+            Node* LL = exhaustiveSplit(l);
             adjustTree(l, LL);
         }
     }
@@ -569,51 +647,27 @@ public:
 };
 
 int main() {
-    // Usamos M=4, m=2
-    Rtree t(2);
 
-    vector<MBR> rects = {
-        MBR(0, 2, 0, 2),   // ID 0
-        MBR(1, 3, 1, 3),   // ID 1
-        MBR(10, 12, 10, 12), // ID 2
-        MBR(11, 13, 11, 13), // ID 3
-        MBR(20, 22, 20, 22), // ID 4
-        MBR(21, 23, 21, 23), // ID 5
-        MBR(30, 32, 30, 32), // ID 6
-        MBR(31, 33, 31, 33), // ID 7
-        MBR(40, 42, 40, 42), // ID 8
-        MBR(41, 43, 41, 43), // ID 9
-        MBR(5, 7, 5, 7),     // ID 10
-        MBR(6, 8, 6, 8)      // ID 11
+    Rtree t(4);
+
+    vector<Entry> entradas = {
+        Entry(MBR(1, 1, 9, 9), nullptr, 0),
+        Entry(MBR(2, 2, 10, 10), nullptr, 1),
+        Entry(MBR(4, 4, 8, 8), nullptr, 2),
+        Entry(MBR(6, 6, 7, 7), nullptr, 3),
+        Entry(MBR(9, 9, 10, 10), nullptr, 4),
+        Entry(MBR(7, 7, 5, 5), nullptr, 5),
+        Entry(MBR(5, 5, 6, 6), nullptr, 6),
+        Entry(MBR(4, 4, 3, 3), nullptr, 7),
+        Entry(MBR(3, 3, 2, 2), nullptr, 8)
     };
 
-    for (int i = 0; i < rects.size(); i++) {
-        t.insert(Entry(rects[i], nullptr, i));
+    for (auto& e : entradas) {
+        t.insert(e);
     }
 
     t.print();
 
-    cout << "\nEliminando ID 0..." << endl;
-    t.remove(Entry(rects[0], nullptr, 0));
-
-    cout << "Eliminando ID 1 ..." << endl;
-    t.remove(Entry(rects[1], nullptr, 1));
-
-    cout << "\nArbol despues de eliminaciones y rebalanceo:" << endl;
-    t.print();
-
-    /*
-       Vaciamos el árbol
-    */
-    cout << "\nVaciando el resto del arbol..." << endl;
-    for (int i = 2; i < rects.size(); i++) {
-        cout << "\nEliminando ID " << i << endl;
-        t.remove(Entry(rects[i], nullptr, i));
-        t.print();
-    }
-
-    cout << "Arbol final (deberia estar vacio o solo raiz nula):" << endl;
-    t.print();
-
+   
     return 0;
 }
