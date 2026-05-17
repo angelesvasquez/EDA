@@ -1,3 +1,9 @@
+//KDTreeInsertion
+/*
+    KDTree por orden de insercion de los puntos
+    Se alternan los ejes de forma normal
+*/
+
 #include <iostream>
 #include <vector>
 using namespace std;
