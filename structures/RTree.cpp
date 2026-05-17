@@ -252,7 +252,7 @@ class Rtree {
         pair<int, int> seeds;
         for (int i = 0; i < entries.size() - 1; i++) {
             MBR I;
-            for (int j = i + 1; j <= entries.size() - 1; j++) {
+            for (int j = i + 1; j < entries.size(); j++) {
                 I = entries[i].mbr;
                 MBR J = entries[j].mbr;
                 I = I.combine(J);
@@ -441,6 +441,7 @@ class Rtree {
             for (auto& e : p->entries) {
                 if (e.childPointer == n) { ep = &e; break; }
             }
+
             Node* pp = nullptr;
             // ajustar el mbr de la entrada para q cubra n
             if (ep) ep->mbr = n->mbrNode;
@@ -467,7 +468,7 @@ class Rtree {
                         p->mbrNode = p->mbrNode.combine(e.mbr);
                     }
 
-                    pp = exhaustiveSplit(p);
+                    pp = quadraticSplit(p);
                     //nn->parent = pp;
                     for (int i = 0; i < p->entries.size(); i++) p->entries[i].childPointer->parent = p;
                     for (int i = 0; i < pp->entries.size(); i++) pp->entries[i].childPointer->parent = pp;
@@ -483,13 +484,13 @@ class Rtree {
         for (int i = 0; i < level; i++) cout << "  ";
 
         cout << "[Level " << level << "] ";
-        cout << (node->isLeaf ? "Leaf" : "Internal");
+        cout << (node->isLeaf ? "Leaf" : "Internal")<<endl;
 
-        // imprimir MBR del nodo
-        cout << " | Node MBR: ";
-        cout << "(" << node->mbrNode.xMin << "," << node->mbrNode.xMax << ") - ";
-        cout << "(" << node->mbrNode.yMin << "," << node->mbrNode.yMax << ")"<<endl;
-        //cout << " | addr: " << node << " | parent: " << node->parent << "\n" << endl;
+        // // imprimir MBR del nodo
+        // cout << " | Node MBR: ";
+        // cout << "(" << node->mbrNode.xMin << "," << node->mbrNode.xMax << ") - ";
+        // cout << "(" << node->mbrNode.yMin << "," << node->mbrNode.yMax << ")"<<endl;
+        // //cout << " | addr: " << node << " | parent: " << node->parent << "\n" << endl;
 
         for (auto& e : node->entries) {
 
@@ -499,8 +500,9 @@ class Rtree {
             cout << "(" << e.mbr.yMin << "," << e.mbr.yMax << ")";
 
             if (node->isLeaf) {
-                cout << " | id: " << e.tupleId << endl;
+                cout << " | id: " << e.tupleId;
             }
+            cout << endl;
             /*else {
                 cout << " | child: " << e.childPointer << endl;
             }*/
@@ -616,7 +618,7 @@ public:
         else {
             // OverFlow
             l->entries.push_back(e);
-            Node* LL = exhaustiveSplit(l);
+            Node* LL = quadraticSplit(l);
             adjustTree(l, LL);
         }
     }
@@ -648,7 +650,7 @@ public:
 
 int main() {
 
-    Rtree t(4);
+    Rtree t(3);
 
     vector<Entry> entradas = {
         Entry(MBR(1, 1, 9, 9), nullptr, 0),
