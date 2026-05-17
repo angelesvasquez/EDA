@@ -73,9 +73,9 @@ void KDTree::insert(Coord& x) {
                     break;
                 }
             }
-            // moverse 
             else {
                 if (p->nodes[1]) p = p->nodes[1];
+                // insertar
                 else {
                     int newLevel = p->level + 1;
                     Node* n = new Node(x, newLevel % k, newLevel);
