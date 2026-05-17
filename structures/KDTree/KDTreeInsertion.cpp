@@ -3,7 +3,7 @@
 using namespace std;
 
 using Coord = vector<double>;
-const int K = 2;
+const int K = 3; // Dimension
 
 struct Node {
     Coord coords;
@@ -29,7 +29,7 @@ public:
 
 void KDTree::preOrden(Node* n) {
     if (!n) return;
-    cout<<"( ";
+    cout << "( ";
     for (auto& c : n->coords) {
         cout << c << " ";
     }
@@ -62,13 +62,13 @@ void KDTree::insert(Coord& x) {
     }
     else {
         Node* p = root;
-        while (true){
+        while (true) {
             if (x[p->axis] < p->coords[p->axis]) {
                 if (p->nodes[0]) p = p->nodes[0];
                 //insertar
                 else {
                     int newLevel = p->level + 1;
-                    Node* n = new Node(x,newLevel % k, newLevel);
+                    Node* n = new Node(x, newLevel % k, newLevel);
                     p->nodes[0] = n;
                     break;
                 }
@@ -89,7 +89,19 @@ void KDTree::insert(Coord& x) {
 }
 
 int main() {
-    vector<Coord> puntos = { {7,8}, {12,3}, {14,1}, {4,12}, {9,1}, {2,7}, {10,19} };
+    //vector<Coord> puntos = { {7,8}, {12,3}, {14,1}, {4,12}, {9,1}, {2,7}, {10,19} };
+    vector<Coord> puntos = {
+        {2, 3, 1 },
+        { 5, 4, 7 },
+        { 9, 6, 2 },
+        { 4, 7, 9 },
+        { 8, 1, 5 },
+        { 7, 2, 6 },
+        { 6, 8, 3 },
+        { 1, 5, 4 },
+        { 3, 9, 8 },
+        { 10, 10, 10 }
+    };
     KDTree t(K);
     for (auto& p : puntos) {
         t.insert(p);
