@@ -29,9 +29,25 @@ public:
     ~KDTree();
     void insert(Coord& p);
     void remove(Coord& p);
+    bool findrec(Coord& p, Node* n);
     bool find(Coord& p);
     void print();
 };
+
+bool KDTree::findrec(Coord& p, Node* n) {
+    if (!n) return false;
+    if (n->coords == p) {
+        return true;
+    }
+    if (p[n->axis] < n->coords[n->axis]) {
+        findrec(p, n->nodes[0]);
+    }
+    else findrec(p, n->nodes[1]);
+}
+
+bool KDTree::find(Coord& p) {
+    return findrec(p, root);
+}
 
 void KDTree::preOrden(Node* n) {
     if (!n) return;
@@ -97,7 +113,7 @@ void KDTree::insert(Coord& x) {
 int main() {
     //vector<Coord> puntos = { {7,8}, {12,3}, {14,1}, {4,12}, {9,1}, {2,7}, {10,19} };
     vector<Coord> puntos = {
-        {2, 3, 1 },
+        { 2, 3, 1 },
         { 5, 4, 7 },
         { 9, 6, 2 },
         { 4, 7, 9 },
@@ -113,4 +129,7 @@ int main() {
         t.insert(p);
     }
     t.print();
+    Coord c = { 10,10,10 };
+    if (t.find(c)) cout << "Encontrado" << endl;
+    else cout << "No se encontro" << endl;
 }
