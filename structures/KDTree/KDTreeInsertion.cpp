@@ -24,29 +24,51 @@ class KDTree {
     Node* root;
     void clear(Node* node);
     void preOrden(Node* n);
+    bool findp(Coord& p, Node**& n);
+    Node** findRemp(Node** p);
 public:
     KDTree(int k_) : k(k_), root(nullptr) {}
     ~KDTree();
     void insert(Coord& p);
-    void remove(Coord& p);
-    bool findrec(Coord& p, Node* n);
-    bool find(Coord& p);
+    bool remove(Coord x);
+    bool find(Coord& x);
     void print();
 };
 
-bool KDTree::findrec(Coord& p, Node* n) {
-    if (!n) return false;
-    if (n->coords == p) {
-        return true;
+Node** KDTree::findRemp(Node** p) {
+    Node** t = &((*p)->nodes[0]);
+    while ((*t)->nodes[1] != 0) {
+        t = &(*t)->nodes[1];
     }
-    if (p[n->axis] < n->coords[n->axis]) {
-        findrec(p, n->nodes[0]);
-    }
-    else findrec(p, n->nodes[1]);
+    return t;
 }
 
-bool KDTree::find(Coord& p) {
-    return findrec(p, root);
+bool KDTree::findp(Coord& x, Node**& p) {
+    for(p = &root; *p && (*p)->coords != x; p = &((*p)->nodes[x[(*p)->axis] > (*p)->coords[(*p)->axis]]));
+    return *p != 0;
+}
+
+bool KDTree::remove(Coord x) {
+    Node** p;
+    if(!findp(x, p)) return 0;
+
+    if ((*p)->nodes[0] && (*p)->nodes[1]) {
+        //caso 2
+        Node** t = findRemp(p);
+        (*p)->coords = (*t)->coords;
+        p = t;
+    }
+    //Caso 0 y 1
+    Node* temp = *p;
+    *p = (*p)->nodes[(*p)->nodes[1] != 0];
+    delete temp;
+    return 1;
+}
+
+bool KDTree::find(Coord& x) {
+    Node** p;
+    if(findp(x, p)) return true;
+    else return false;
 }
 
 void KDTree::preOrden(Node* n) {
@@ -129,7 +151,9 @@ int main() {
         t.insert(p);
     }
     t.print();
-    Coord c = { 10,10,10 };
+    Coord c = { 3,9,8 };
     if (t.find(c)) cout << "Encontrado" << endl;
     else cout << "No se encontro" << endl;
+    t.remove({ 4,7,9 });
+    t.print();
 }
