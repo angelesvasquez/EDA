@@ -35,6 +35,8 @@ public:
     void print();
 };
 
+/*
+// Corregir para que busque de acuerdo al eje
 Node** KDTree::findRemp(Node** p) {
     Node** t = &((*p)->nodes[0]);
     while ((*t)->nodes[1] != 0) {
@@ -43,15 +45,10 @@ Node** KDTree::findRemp(Node** p) {
     return t;
 }
 
-bool KDTree::findp(Coord& x, Node**& p) {
-    for(p = &root; *p && (*p)->coords != x; p = &((*p)->nodes[x[(*p)->axis] > (*p)->coords[(*p)->axis]]));
-    return *p != 0;
-}
-
 bool KDTree::remove(Coord x) {
     Node** p;
     if(!findp(x, p)) return 0;
-
+    
     if ((*p)->nodes[0] && (*p)->nodes[1]) {
         //caso 2
         Node** t = findRemp(p);
@@ -64,6 +61,13 @@ bool KDTree::remove(Coord x) {
     delete temp;
     return 1;
 }
+*/
+
+bool KDTree::findp(Coord& x, Node**& p) {
+    for(p = &root; *p && (*p)->coords != x; p = &((*p)->nodes[x[(*p)->axis] > (*p)->coords[(*p)->axis]]));
+    return *p != 0;
+}
+
 
 bool KDTree::find(Coord& x) {
     Node** p;
@@ -84,18 +88,6 @@ void KDTree::preOrden(Node* n) {
 
 void KDTree::print() {
     preOrden(root);
-}
-
-void KDTree::clear(Node* node) {
-    if (!node) return;
-    clear(node->nodes[0]);
-    clear(node->nodes[1]);
-
-    delete node;
-}
-
-KDTree::~KDTree() {
-    clear(root);
 }
 
 void KDTree::insert(Coord& x) {
@@ -132,6 +124,19 @@ void KDTree::insert(Coord& x) {
     }
 }
 
+void KDTree::clear(Node* node) {
+    if (!node) return;
+    clear(node->nodes[0]);
+    clear(node->nodes[1]);
+
+    delete node;
+}
+
+KDTree::~KDTree() {
+    clear(root);
+}
+
+
 int main() {
     //vector<Coord> puntos = { {7,8}, {12,3}, {14,1}, {4,12}, {9,1}, {2,7}, {10,19} };
     vector<Coord> puntos = {
@@ -154,6 +159,6 @@ int main() {
     Coord c = { 3,9,8 };
     if (t.find(c)) cout << "Encontrado" << endl;
     else cout << "No se encontro" << endl;
-    t.remove({ 4,7,9 });
-    t.print();
+    //t.remove({ 4,7,9 });
+    //t.print();
 }
