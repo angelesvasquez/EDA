@@ -91,6 +91,7 @@ void KDTree::print() {
 }
 
 void KDTree::insert(Coord& x) {
+    if(x.size() != K) return;
     if (!root) {
         Node* n = new Node(x, 0, 0);
         root = n;
